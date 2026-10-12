@@ -28,11 +28,11 @@ def main() -> None:
     import uvicorn
 
     dist = Path(__file__).resolve().parent / "frontend" / "dist"
-    print("⚡ QuantBuild")
+    print("[QuantBuild] AI-Powered Full-Stack Architecture Designer")
     print(f"   API + UI : http://{args.host}:{args.port}")
     print(f"   API docs : http://{args.host}:{args.port}/docs")
     if not dist.exists():
-        print("   (frontend/dist not built — run `cd frontend && npm install && npm run build`,")
+        print("   (frontend/dist not built -- run `cd frontend && npm install && npm run build`,")
         print("    or use `npm run dev` for the Vite dev server on :5173)")
     uvicorn.run("app.main:app", host=args.host, port=args.port, reload=args.reload,
                 reload_dirs=[str(BACKEND / "app")] if args.reload else None)
