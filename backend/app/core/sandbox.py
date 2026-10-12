@@ -104,6 +104,9 @@ class SandboxManager:
         for project_id in list(self._previews):
             self.stop(project_id)
 
+    def instance(self, project_id: str) -> "PreviewInstance | None":
+        return self._previews.get(project_id)
+
     def status(self, project_id: str) -> dict:
         inst = self._previews.get(project_id)
         if not inst:

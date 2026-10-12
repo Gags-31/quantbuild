@@ -15,9 +15,10 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+import httpx
+from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, Response, StreamingResponse
 from pydantic import BaseModel, Field
 
 from .agents.orchestrator import ProjectManagerAgent
@@ -244,7 +245,9 @@ def preview_page(project_id: str) -> HTMLResponse:
     """Serve the generated application's website as a live preview.
 
     One shared bundle (built from the same templates that produced the
-    generated frontend) is configured per project at render time.
+    generated frontend) is configured per project at render time. The website
+    talks to the sandbox backend through the same-origin proxy
+    (/sandbox/{id}/...) so it works from any browser, on localhost or Render.
     """
     ctx = get_ctx_or_404(project_id)
     status = sandbox.status(project_id)
@@ -263,9 +266,42 @@ def preview_page(project_id: str) -> HTMLResponse:
     }
     html = (PREVIEW_HTML
             .replace("__APP_NAME__", spec.get("name", ctx.name))
-            .replace("__API_BASE__", json.dumps(status["url"]))
+            .replace("__API_BASE__", json.dumps(f"/sandbox/{project_id}"))
             .replace("__CONFIG_JSON__", json.dumps(config)))
     return HTMLResponse(html)
+
+
+# ---------------------------------------------------------------------------
+# same-origin proxy: browser → main server → sandbox subprocess
+# ---------------------------------------------------------------------------
+
+_PROXY_CLIENT = httpx.AsyncClient(timeout=120.0)
+
+
+@app.api_route("/sandbox/{project_id}/{path:path}", methods=[
+    "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"])
+async def sandbox_proxy(project_id: str, path: str, request: Request) -> Response:
+    """Forward API calls from the preview website to the sandbox backend.
+
+    The browser only ever talks to the QuantBuild origin — the proxy hides the
+    sandbox's localhost port, which makes the preview work identically on a
+    local machine and on a deployed host (Render, etc.).
+    """
+    inst = sandbox.instance(project_id)
+    if inst is None or inst.process.poll() is not None:
+        raise HTTPException(409, "Sandbox is not running — start it first")
+    url = f"http://127.0.0.1:{inst.port}/{path}"
+    body = await request.body()
+    headers = {k: v for k, v in request.headers.items()
+               if k.lower() not in ("host", "content-length", "connection")}
+    resp = await _PROXY_CLIENT.request(
+        request.method, url, params=request.query_params,
+        content=body or None, headers=headers)
+    return Response(
+        content=resp.content, status_code=resp.status_code,
+        headers={k: v for k, v in resp.headers.items()
+                 if k.lower() not in ("content-encoding", "transfer-encoding",
+                                      "content-length", "connection")})
 
 
 @app.post("/api/projects/{project_id}/preview")

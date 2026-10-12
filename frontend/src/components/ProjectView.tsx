@@ -78,7 +78,7 @@ export default function ProjectView({
                   🌐 Open Website
                 </a>
                 <a
-                  href={`${preview.url}/docs`}
+                  href={`/sandbox/${project.id}/docs`}
                   target="_blank"
                   rel="noreferrer"
                   className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded-lg px-4 py-2 transition"
