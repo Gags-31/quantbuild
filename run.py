@@ -10,6 +10,7 @@ For frontend development, run Vite separately:  cd frontend && npm run dev
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
@@ -19,8 +20,8 @@ sys.path.insert(0, str(BACKEND))
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Launch QuantBuild")
-    parser.add_argument("--port", type=int, default=8000)
-    parser.add_argument("--host", default="127.0.0.1")
+    parser.add_argument("--port", type=int, default=int(os.getenv("PORT", "8000")))
+    parser.add_argument("--host", default="0.0.0.0")
     parser.add_argument("--reload", action="store_true", help="auto-reload on code changes")
     args = parser.parse_args()
 
