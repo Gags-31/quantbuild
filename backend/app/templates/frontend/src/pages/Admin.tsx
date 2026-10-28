@@ -15,22 +15,30 @@ export default function Admin() {
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to load users"));
   }, []);
 
-  if (error) return <div className="p-10 text-center text-red-600">{error}</div>;
+  if (error) return <div className="p-10 text-center text-rose-600">{error}</div>;
   if (!users) return <Spinner />;
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-10">
-      <h1 className="text-2xl font-bold text-slate-900 mb-6">Admin console</h1>
-      <div className="bg-white border border-slate-200 rounded-lg shadow-sm">
-        <DataTable
-          columns={[
-            { key: "id", label: "ID" },
-            { key: "email", label: "Email" },
-            { key: "full_name", label: "Name" },
-            { key: "role", label: "Role" },
-          ]}
-          rows={users as unknown as Record<string, unknown>[]}
-        />
+    <div className="page-gradient min-h-screen">
+      <div className="relative z-10 max-w-5xl mx-auto px-6 py-8">
+        <div className="flex items-center justify-between mb-6 animate-fade-in">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">Admin console</h1>
+            <p className="text-slate-500 text-sm">Manage platform users</p>
+          </div>
+          <span className="badge badge-warning px-3 py-1">Super admin</span>
+        </div>
+        <div className="glass-card p-6">
+          <DataTable
+            columns={[
+              { key: "id", label: "ID" },
+              { key: "email", label: "Email" },
+              { key: "full_name", label: "Name" },
+              { key: "role", label: "Role" },
+            ]}
+            rows={users as unknown as Record<string, unknown>[]}
+          />
+        </div>
       </div>
     </div>
   );

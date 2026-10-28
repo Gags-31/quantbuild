@@ -7,34 +7,34 @@ interface DataTableProps {
 
 export default function DataTable({ columns, rows, onEdit, onDelete }: DataTableProps) {
   if (rows.length === 0) {
-    return <div className="p-8 text-center text-slate-500">No records yet.</div>;
+    return <div className="flex flex-col items-center justify-center py-12 text-center"><EmptyState /> </div>;
   }
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-slate-200 text-sm">
+    <div className="rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+      <table className="w-full text-sm divide-y divide-slate-100">
         <thead className="bg-slate-50">
           <tr>
             {columns.map((col) => (
-              <th key={col.key} className="px-4 py-2 text-left font-medium text-slate-600">
+              <th key={col.key} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
                 {col.label}
               </th>
             ))}
-            {(onEdit || onDelete) && <th className="px-4 py-2" />}
+            {(onEdit || onDelete) && <th className="px-4 py-3" />}
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100">
+        <tbody className="divide-y divide-slate-100 bg-white">
           {rows.map((row) => (
-            <tr key={String(row.id)} className="hover:bg-slate-50">
+            <tr key={String(row.id)} className="hover:bg-slate-50 transition-colors">
               {columns.map((col) => (
-                <td key={col.key} className="px-4 py-2 text-slate-700">
+                <td key={col.key} className="px-4 py-3 text-sm text-slate-700">
                   {formatCell(row[col.key])}
                 </td>
               ))}
               {(onEdit || onDelete) && (
-                <td className="px-4 py-2 text-right whitespace-nowrap">
+                <td className="px-4 py-3 text-right whitespace-nowrap">
                   {onEdit && (
                     <button
-                      className="text-brand-600 hover:underline mr-3"
+                      className="text-brand-600 hover:underline text-sm font-medium"
                       onClick={() => onEdit(row)}
                     >
                       Edit
@@ -42,7 +42,7 @@ export default function DataTable({ columns, rows, onEdit, onDelete }: DataTable
                   )}
                   {onDelete && (
                     <button
-                      className="text-red-600 hover:underline"
+                      className="text-rose-600 hover:underline text-sm font-medium ml-3"
                       onClick={() => onDelete(row)}
                     >
                       Delete
@@ -63,3 +63,5 @@ function formatCell(value: unknown): string {
   if (typeof value === "boolean") return value ? "Yes" : "No";
   return String(value);
 }
+
+import EmptyState from "./EmptyState";

@@ -6,10 +6,10 @@ interface FormFieldProps {
 
 export default function FormField({ label, error, children }: FormFieldProps) {
   return (
-    <label className="block mb-3">
-      <span className="block text-sm font-medium text-slate-700 mb-1">{label}</span>
+    <div className="space-y-2">
+      <label className="block text-sm font-medium text-slate-700">{label}</label>
       {children}
-      {error && <span className="block text-sm text-red-600 mt-1">{error}</span>}
-    </label>
+      {error && <span className="block text-sm text-rose-600">{error}</span>}
+    </div>
   );
 }

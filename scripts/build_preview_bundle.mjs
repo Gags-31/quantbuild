@@ -1,56 +1,65 @@
 /**
- * Builds the QuantBuild live-preview bundle.
- *
- * All generated frontends share the same component code (backend/app/templates/frontend),
- * so ONE bundle serves every project's live preview — the per-project entity
- * configuration and API base are injected by the server at page-render time.
+ * Builds the QuantBuild live-preview bundle using Vite (same pipeline as the
+ * frontend build, so everything stays in sync).
  *
  *   node scripts/build_preview_bundle.mjs
  *
- * Outputs: backend/app/static/preview/bundle.js  (+ preview.css via tailwind CLI)
+ * Outputs: backend/app/static/preview/bundle.js (+ preview.css)
  */
-import { build } from "../frontend/node_modules/esbuild/lib/main.js";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
+import fs from "node:fs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const TEMPLATES = path.join(ROOT, "backend", "app", "templates");
-const NODE_MODULES = path.join(ROOT, "frontend", "node_modules");
+const FRONTEND = path.join(ROOT, "frontend");
 const OUT_DIR = path.join(ROOT, "backend", "app", "static", "preview");
+const VITE_CONFIG = path.join(FRONTEND, "vite.preview.config.mjs");
 
-// Redirect generated-config imports to the runtime shim.
-const configShimPlugin = {
-  name: "config-shim",
-  setup(buildApi) {
-    buildApi.onResolve({ filter: /(^|\/)(entityConfig|appInfo)$/ }, () => ({
-      path: path.join(TEMPLATES, "preview", "runtimeShim.ts"),
-    }));
+// Temporary Vite config placed inside frontend/ so vite resolves correctly.
+const config = `
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import path from "node:path";
+
+export default defineConfig({
+  plugins: [react()],
+  build: {
+    outDir: "${OUT_DIR.replace(/\\/g, "\\\\")}",
+    emptyOutDir: true,
+    rollupOptions: {
+      input: {
+        main: "${path.join(ROOT, "backend", "app", "templates", "preview", "main_preview.tsx").replace(/\\/g, "\\\\")}",
+      },
+      output: {
+        entryFileNames: "bundle.js",
+        assetFileNames: "preview.[ext]",
+      },
+    },
   },
-};
-
-await build({
-  entryPoints: [path.join(TEMPLATES, "preview", "main_preview.tsx")],
-  bundle: true,
-  outfile: path.join(OUT_DIR, "bundle.js"),
-  format: "iife",
-  jsx: "automatic",
-  minify: true,
-  target: ["es2020"],
-  nodePaths: [NODE_MODULES],
-  plugins: [configShimPlugin],
-  define: { "process.env.NODE_ENV": '"production"' },
-  logLevel: "info",
+  resolve: {
+    alias: {
+      "@": "${path.join(ROOT, "backend", "app", "templates", "frontend", "src").replace(/\\/g, "\\\\")}",
+      react: "${path.join(FRONTEND, "node_modules", "react").replace(/\\/g, "\\\\")}",
+      "react-dom": "${path.join(FRONTEND, "node_modules", "react-dom").replace(/\\/g, "\\\\")}",
+      "react-router-dom": "${path.join(FRONTEND, "node_modules", "react-router-dom").replace(/\\/g, "\\\\")}",
+    },
+    modules: [
+      "${path.join(FRONTEND, "node_modules").replace(/\\/g, "\\\\")}",
+      "${path.join(ROOT, "backend", "app", "templates", "frontend", "src").replace(/\\/g, "\\\\")}",
+    ],
+  },
 });
+`;
 
-// Tailwind CSS for the preview (same theme as generated apps).
-const tailwindCli = path.join(NODE_MODULES, "tailwindcss", "lib", "cli.js");
+fs.writeFileSync(VITE_CONFIG, config);
+
 execFileSync(process.execPath, [
-  tailwindCli,
-  "-c", path.join(TEMPLATES, "preview", "tailwind.preview.config.js"),
-  "-i", path.join(TEMPLATES, "frontend", "src", "index.css"),
-  "-o", path.join(OUT_DIR, "preview.css"),
-  "--minify",
-], { cwd: path.join(TEMPLATES, "preview"), stdio: "inherit" });
+  path.join(FRONTEND, "node_modules", "vite", "bin", "vite.js"),
+  "build",
+  "--config", VITE_CONFIG,
+], { cwd: FRONTEND, stdio: "inherit", env: { ...process.env, FORCE_COLOR: "0" } });
 
 console.log("✔ preview bundle written to", OUT_DIR);
+
+fs.unlinkSync(VITE_CONFIG);

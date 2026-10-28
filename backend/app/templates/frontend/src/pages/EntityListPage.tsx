@@ -5,6 +5,7 @@ import FormField from "../components/FormField";
 import Spinner from "../components/Spinner";
 import EmptyState from "../components/EmptyState";
 import type { EntityConfig } from "../entityConfig";
+import { appInfo } from "../appInfo";
 
 export default function EntityListPage({ config }: { config: EntityConfig }) {
   const [rows, setRows] = useState<Record<string, unknown>[] | null>(null);
@@ -13,6 +14,7 @@ export default function EntityListPage({ config }: { config: EntityConfig }) {
   const [editing, setEditing] = useState<Record<string, unknown> | null>(null);
   const [form, setForm] = useState<Record<string, unknown>>({});
   const [formError, setFormError] = useState("");
+  const [busy, setBusy] = useState(false);
 
   const load = useCallback(() => {
     api
@@ -53,6 +55,7 @@ export default function EntityListPage({ config }: { config: EntityConfig }) {
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError("");
+    setBusy(true);
     const payload: Record<string, unknown> = {};
     for (const field of config.fields) {
       const value = form[field.key];
@@ -69,8 +72,11 @@ export default function EntityListPage({ config }: { config: EntityConfig }) {
       }
       setEditing(null);
       load();
+      window.showToast?.("success", "Saved", "Changes have been saved successfully.");
     } catch (err) {
       setFormError(err instanceof Error ? err.message : "Save failed");
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -78,91 +84,133 @@ export default function EntityListPage({ config }: { config: EntityConfig }) {
     if (!window.confirm("Delete this record?")) return;
     await api.remove(config.resource, row.id as number);
     load();
+    window.showToast?.("success", "Deleted", "Record removed successfully.");
   };
 
-  if (error) return <div className="p-10 text-center text-red-600">{error}</div>;
+  if (error) return <div className="p-10 text-center text-rose-600">{error}</div>;
   if (!rows) return <Spinner />;
 
-  return (
-    <div className="max-w-7xl mx-auto px-4 py-10">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-slate-900">{config.label}</h1>
-        <button
-          onClick={openCreate}
-          className="bg-brand-600 text-white rounded px-4 py-2 text-sm hover:bg-brand-700"
-        >
-          + New
-        </button>
-      </div>
-      <input
-        placeholder="Search…"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="w-full border border-slate-300 rounded px-3 py-2 mb-4"
-      />
-      <div className="bg-white border border-slate-200 rounded-lg shadow-sm">
-        {filtered.length === 0 ? (
-          <EmptyState title={"No " + config.label.toLowerCase() + " found"} hint="Create the first one." />
-        ) : (
-          <DataTable columns={config.columns} rows={filtered} onEdit={openEdit} onDelete={remove} />
-        )}
-      </div>
+  const isNew = editing && typeof editing.id !== "number";
 
-      {editing && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-20">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg p-6 max-h-[85vh] overflow-y-auto">
-            <h2 className="text-lg font-semibold mb-4">
-              {typeof editing.id === "number" ? "Edit" : "Create"} {config.label}
-            </h2>
-            <form onSubmit={save}>
-              {config.fields.map((field) => (
-                <FormField key={field.key} label={field.label}>
-                  {field.input === "textarea" ? (
-                    <textarea
-                      required={field.required}
-                      value={String(form[field.key] ?? "")}
-                      onChange={(e) => setForm({ ...form, [field.key]: e.target.value })}
-                      className="w-full border border-slate-300 rounded px-3 py-2"
-                    />
-                  ) : field.input === "checkbox" ? (
-                    <input
-                      type="checkbox"
-                      checked={Boolean(form[field.key])}
-                      onChange={(e) => setForm({ ...form, [field.key]: e.target.checked })}
-                      className="h-4 w-4"
-                    />
-                  ) : (
-                    <input
-                      type={field.input}
-                      required={field.required}
-                      step={field.input === "number" ? "any" : undefined}
-                      value={String(form[field.key] ?? "")}
-                      onChange={(e) => setForm({ ...form, [field.key]: e.target.value })}
-                      className="w-full border border-slate-300 rounded px-3 py-2"
-                    />
-                  )}
-                </FormField>
-              ))}
-              {formError && <p className="text-sm text-red-600 mb-3">{formError}</p>}
-              <div className="flex justify-end gap-2 mt-4">
-                <button
-                  type="button"
-                  onClick={() => setEditing(null)}
-                  className="border border-slate-300 rounded px-4 py-2 text-sm"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="bg-brand-600 text-white rounded px-4 py-2 text-sm hover:bg-brand-700"
-                >
-                  Save
-                </button>
-              </div>
-            </form>
+  return (
+    <div className="page-gradient min-h-screen">
+      <div className="relative z-10 max-w-7xl mx-auto px-6 py-8">
+        <div className="flex items-center justify-between mb-6 animate-fade-in">
+          <div>
+            <a href="/" className="text-sm font-medium text-brand-600 hover:underline mb-2 inline-block">
+              ← Back to dashboard
+            </a>
+            <h1 className="text-2xl font-bold text-slate-900">{config.label}</h1>
+            <p className="text-slate-500 text-sm">
+              Browse, create, edit and delete {config.label.toLowerCase()}.
+            </p>
+          </div>
+          <button onClick={openCreate} className="btn-primary">
+            + New {config.label.slice(0, -1)}
+          </button>
+        </div>
+
+        <div className="glass-card p-6 animate-fade-in" style={{ animationDelay: "0.2s" }}>
+          <div className="flex items-center gap-4 mb-6">
+            <input
+              placeholder={`Search ${config.label.toLowerCase()}…`}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="input-field flex-1 max-w-md"
+            />
+            <div className="text-sm text-slate-500">
+              {filtered.length} of {rows.length} records
+            </div>
+          </div>
+          <div className="rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+            {filtered.length === 0 ? (
+              <EmptyState
+                title={`No ${config.label.toLowerCase()} found`}
+                hint="Create the first one."
+              />
+            ) : (
+              <DataTable
+                columns={config.columns}
+                rows={filtered}
+                onEdit={openEdit}
+                onDelete={remove}
+              />
+            )}
           </div>
         </div>
-      )}
+
+        {editing && (
+          <div className="animate-fade-in animate-slide-up" style={{ animationDelay: "0.3s" }}>
+            <div className="glass-card p-6 mt-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-slate-800">
+                  {isNew ? "Create" : "Edit"} {config.label}
+                </h3>
+                <button
+                  onClick={() => setEditing(null)}
+                  className="p-2 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-900 transition"
+                >
+                  ✕
+                </button>
+              </div>
+              <form onSubmit={save} className="space-y-4">
+                {config.fields.map((field) => (
+                  <FormField key={field.key} label={field.label}>
+                    {field.input === "textarea" ? (
+                      <textarea
+                        required={field.required}
+                        value={String(form[field.key] ?? "")}
+                        onChange={(e) => setForm({ ...form, [field.key]: e.target.value })}
+                        className="input-field min-h-[80px] resize-none"
+                      />
+                    ) : field.input === "checkbox" ? (
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(form[field.key])}
+                          onChange={(e) => setForm({ ...form, [field.key]: e.target.checked })}
+                          className="rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                        />
+                        <span className="text-sm text-slate-600">{field.label}</span>
+                      </div>
+                    ) : (
+                      <input
+                        type={field.input}
+                        required={field.required}
+                        step={field.input === "number" ? "any" : undefined}
+                        value={String(form[field.key] ?? "")}
+                        onChange={(e) => setForm({ ...form, [field.key]: e.target.value })}
+                        className="input-field"
+                      />
+                    )}
+                  </FormField>
+                ))}
+                {formError && (
+                  <div className="rounded-xl bg-rose-50 border border-rose-200 px-4 py-3 text-sm text-rose-700">
+                    {formError}
+                  </div>
+                )}
+                <div className="flex justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditing(null)}
+                    className="btn-outline"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={busy}
+                    className={busy ? "btn-primary opacity-90 cursor-wait" : "btn-primary"}
+                  >
+                    {busy ? "Saving…" : "Save changes"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
