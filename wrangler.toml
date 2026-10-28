@@ -1,0 +1,5 @@
+name = "quantbuild"
+compatibility_date = "2026-10-28"
+pages_build_output_dir = "frontend/dist"
+
+[[pages_functions]]
