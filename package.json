@@ -1,0 +1,17 @@
+
+{
+  "name": "quantbuild-cloudflare",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev"
+  },
+  "dependencies": {
+    "@cloudflare/containers": "latest"
+  },
+  "devDependencies": {
+    "wrangler": "latest",
+    "typescript": "latest"
+  }
+}
