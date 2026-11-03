@@ -211,6 +211,20 @@ Notes: the free tier sleeps after inactivity (first load takes ~30–60 s to wak
 Generated projects live in the instance filesystem, so redeploys start fresh —
 download the .zip from the UI to keep a project.
 
+### Cloudflare Containers (Docker on Cloudflare)
+
+QuantBuild ships as a container image (`Dockerfile`) that can run on
+Cloudflare's Containers platform via Durable Objects:
+
+1. `npm install` at the repo root (installs `wrangler` + `@cloudflare/containers`)
+2. `npm run deploy` (runs `wrangler deploy`, builds the image and deploys it)
+
+The worker (`src/index.ts`) routes all traffic to the container. The container
+build stage compiles the React frontend + live-preview bundle with Vite, and the
+runtime stage runs FastAPI. The container honours the `PORT` env var
+(Cloudflare uses 8080, Render uses 10000), and sleeps after ~30 min of
+inactivity, waking on the next request.
+
 ## 🧪 Running QuantBuild's own tests
 
 ```bash

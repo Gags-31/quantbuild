@@ -63,3 +63,17 @@ execFileSync(process.execPath, [
 console.log("✔ preview bundle written to", OUT_DIR);
 
 fs.unlinkSync(VITE_CONFIG);
+
+// Compile the Tailwind stylesheet for the preview page (class utilities +
+// the shared component classes come from templates/frontend/src/index.css).
+const PREVIEW_DIR = path.join(ROOT, "backend", "app", "templates", "preview");
+execFileSync(process.execPath, [
+  path.join(FRONTEND, "node_modules", "tailwindcss", "lib", "cli.js"),
+  "-i", path.join(ROOT, "backend", "app", "templates", "frontend", "src", "index.css"),
+  "-o", path.join(OUT_DIR, "preview.css"),
+  "-c", path.join(PREVIEW_DIR, "tailwind.preview.config.js"),
+  "--minify",
+], { cwd: PREVIEW_DIR, stdio: "inherit", env: { ...process.env, FORCE_COLOR: "0" } });
+
+console.log("✔ preview.css written (Tailwind)");
+
