@@ -54,9 +54,9 @@
   .animate-slide-up {
     animation: slideUp 0.6s ease-out forwards;
   }
-  .animate-stagger-1 { animation-delay: 0.1s; opacity: 0; animation-fill-mode: forwards; }
-  .animate-stagger-2 { animation-delay: 0.2s; opacity: 0; animation-fill-mode: forwards; }
-  .animate-stagger-3 { animation-delay: 0.3s; opacity: 0; animation-fill-mode: forwards; }
+  .animate-stagger-1 { animation: fadeIn 0.5s ease-out 0.1s forwards; opacity: 0; }
+  .animate-stagger-2 { animation: fadeIn 0.6s ease-out 0.2s forwards; opacity: 0; }
+  .animate-stagger-3 { animation: fadeIn 0.7s ease-out 0.3s forwards; opacity: 0; }
   .glass-nav {
     @apply bg-white/80 backdrop-blur-md border-b border-white/50 sticky top-0 z-50;
   }

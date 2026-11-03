@@ -55,7 +55,7 @@ export default function Navbar({ entityConfigs, appInfo }: NavbarProps) {
                   {cfg.label}
                 </Link>
               ))}
-              {["admin", "administrator"].includes((user.role || "").toLowerCase()) && (
+              {user && ["admin", "administrator"].includes((user.role || "").toLowerCase()) && (
                 <Link className="text-sm font-medium text-slate-600 hover:text-brand-600 transition" to="/admin">
                   Admin
                 </Link>
@@ -101,9 +101,6 @@ export default function Navbar({ entityConfigs, appInfo }: NavbarProps) {
           </button>
         </div>
       </nav>
-
-      {/* Mobile theme/toast container */}
-      <div id="toast-container" className="fixed top-6 right-6 z-[70] flex flex-col gap-2 pointer-events-none" />
     </>
   );
 }

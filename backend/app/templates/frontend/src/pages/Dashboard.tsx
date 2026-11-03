@@ -2,11 +2,11 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
-import { entityConfigs } from "../entityConfig";
+import type { EntityConfig } from "../entityConfig";
 import Spinner from "../components/Spinner";
 import StatCard from "../components/StatCard";
 
-export default function Dashboard() {
+export default function Dashboard({ entityConfigs }: { entityConfigs: EntityConfig[] }) {
   const { user } = useAuth();
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
