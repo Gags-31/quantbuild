@@ -139,14 +139,17 @@ export default function App() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* top bar */}
-      <header className="border-b border-surface-800 bg-surface-900/80 backdrop-blur sticky top-0 z-20">
+      <header className="border-b border-surface-800/60 bg-surface-900/60 backdrop-blur-xl sticky top-0 z-20">
         <div className="max-w-[1600px] mx-auto px-5 h-14 flex items-center gap-3">
           <button onClick={() => select(null)} className="flex items-center gap-2.5">
-            <span className="text-2xl">⚡</span>
-            <span className="font-bold text-lg text-slate-100">QuantBuild</span>
+            <span className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-base shadow-lg"
+                  style={{ background: "linear-gradient(135deg,#4f46e5,#7c3aed)" }}>
+              ⚡
+            </span>
+            <span className="font-bold text-lg gradient-text">QuantBuild</span>
           </button>
           <span className="text-xs text-slate-500 hidden sm:block">
-            AI-Powered Full-Stack Architecture Designer & App Builder
+            AI-Powered Full-Stack Architecture Designer &amp; App Builder
           </span>
           <div className="ml-auto flex items-center gap-3">
             {config && (
@@ -170,7 +173,7 @@ export default function App() {
         <aside className="w-60 shrink-0 hidden md:block">
           <button
             onClick={() => select(null)}
-            className="w-full bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-lg px-4 py-2.5 transition mb-4"
+            className="btn-glow w-full mb-4"
           >
             + New Application
           </button>
@@ -182,10 +185,10 @@ export default function App() {
             {projects.map((p) => (
               <div
                 key={p.id}
-                className={`group rounded-lg border px-3 py-2.5 cursor-pointer transition ${
+                className={`group rounded-lg border px-3 py-2.5 cursor-pointer transition glass-panel-hover ${
                   selectedId === p.id
-                    ? "border-brand-500/50 bg-brand-600/10"
-                    : "border-surface-800 bg-surface-850 hover:border-slate-700"
+                    ? "border-brand-500/50 bg-brand-600/10 shadow-[0_0_18px_rgba(99,102,241,0.18)]"
+                    : "border-surface-800/70 bg-surface-850/40 hover:border-slate-700"
                 }`}
                 onClick={() => select(p.id)}
               >
@@ -233,8 +236,8 @@ export default function App() {
           ) : (
             <div className="space-y-6">
               {project && (project.status === "generating" || project.status === "modifying" || events.length > 0) && (
-                <div className="bg-surface-900 border border-surface-800 rounded-xl p-4">
-                  <div className="text-xs text-slate-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+                <div className="glass-panel rounded-xl p-4">
+                  <div className="text-xs text-brand-300/80 uppercase tracking-wide mb-3 flex items-center gap-2">
                     <span className="h-2 w-2 rounded-full bg-brand-400 dot-pulse" />
                     Multi-Agent Pipeline — live
                   </div>

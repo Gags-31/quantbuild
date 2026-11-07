@@ -5,12 +5,16 @@ import FormField from "../components/FormField";
 import Spinner from "../components/Spinner";
 import EmptyState from "../components/EmptyState";
 import type { EntityConfig } from "../entityConfig";
-import { appInfo } from "../appInfo";
+
+const PAGE_SIZE = 8;
 
 export default function EntityListPage({ config }: { config: EntityConfig }) {
   const [rows, setRows] = useState<Record<string, unknown>[] | null>(null);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
+  const [sortKey, setSortKey] = useState<string>("id");
+  const [sortAsc, setSortAsc] = useState(true);
+  const [page, setPage] = useState(0);
   const [editing, setEditing] = useState<Record<string, unknown> | null>(null);
   const [form, setForm] = useState<Record<string, unknown>>({});
   const [formError, setFormError] = useState("");
@@ -24,6 +28,7 @@ export default function EntityListPage({ config }: { config: EntityConfig }) {
   }, [config.resource]);
 
   useEffect(load, [load]);
+  useEffect(() => { setPage(0); }, [search, sortKey, sortAsc]);
 
   const filtered = useMemo(() => {
     if (!rows) return [];
@@ -33,6 +38,31 @@ export default function EntityListPage({ config }: { config: EntityConfig }) {
       Object.values(row).some((v) => String(v).toLowerCase().includes(needle))
     );
   }, [rows, search]);
+
+  const sorted = useMemo(() => {
+    const copy = [...filtered];
+    copy.sort((a, b) => {
+      const av = a[sortKey];
+      const bv = b[sortKey];
+      if (typeof av === "number" && typeof bv === "number") return sortAsc ? av - bv : bv - av;
+      return sortAsc
+        ? String(av ?? "").localeCompare(String(bv ?? ""))
+        : String(bv ?? "").localeCompare(String(av ?? ""));
+    });
+    return copy;
+  }, [filtered, sortKey, sortAsc]);
+
+  const pageCount = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount - 1);
+  const pageRows = sorted.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE);
+
+  const toggleSort = (key: string) => {
+    if (key === sortKey) setSortAsc((v) => !v);
+    else {
+      setSortKey(key);
+      setSortAsc(true);
+    }
+  };
 
   const openCreate = () => {
     const initial: Record<string, unknown> = {};
@@ -66,7 +96,7 @@ export default function EntityListPage({ config }: { config: EntityConfig }) {
     }
     try {
       if (editing && typeof editing.id === "number") {
-        await api.update(config.resource, editing.id, payload);
+        await api.update(config.resource, editing.id as number, payload);
       } else {
         await api.create(config.resource, payload);
       }
@@ -97,7 +127,7 @@ export default function EntityListPage({ config }: { config: EntityConfig }) {
       <div className="relative z-10 max-w-7xl mx-auto px-6 py-8">
         <div className="flex items-center justify-between mb-6 animate-fade-in">
           <div>
-            <a href="/" className="text-sm font-medium text-brand-600 hover:underline mb-2 inline-block">
+            <a href="#/dashboard" className="text-sm font-medium text-brand-600 hover:underline mb-2 inline-block">
               ← Back to dashboard
             </a>
             <h1 className="text-2xl font-bold text-slate-900">{config.label}</h1>
@@ -105,43 +135,79 @@ export default function EntityListPage({ config }: { config: EntityConfig }) {
               Browse, create, edit and delete {config.label.toLowerCase()}.
             </p>
           </div>
-          <button onClick={openCreate} className="btn-primary">
-            + New {config.label.slice(0, -1)}
+          <button onClick={openCreate} className="btn-primary shadow-lg shadow-brand-600/25">
+            + New {config.label.replace(/s$/, "")}
           </button>
         </div>
 
-        <div className="glass-card p-6 animate-fade-in" style={{ animationDelay: "0.2s" }}>
-          <div className="flex items-center gap-4 mb-6">
+        <div className="glass-panel-light p-6 animate-fade-in" style={{ animationDelay: "0.15s" }}>
+          <div className="flex items-center gap-4 mb-6 flex-wrap">
             <input
               placeholder={`Search ${config.label.toLowerCase()}…`}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="input-field flex-1 max-w-md"
+              className="input-field flex-1 min-w-[240px] max-w-md"
             />
-            <div className="text-sm text-slate-500">
-              {filtered.length} of {rows.length} records
+            <div className="flex items-center gap-2 text-sm text-slate-500 ml-auto">
+              <span className="badge badge-slate">{sorted.length} total</span>
+              <select
+                value={`${safePage}`}
+                onChange={(e) => setPage(Number(e.target.value))}
+                className="input-field !py-1.5 !px-3 !w-auto text-sm"
+              >
+                {Array.from({ length: pageCount }, (_, i) => (
+                  <option key={i} value={i}>
+                    Page {i + 1} of {pageCount}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
-          <div className="rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-            {filtered.length === 0 ? (
-              <EmptyState
-                title={`No ${config.label.toLowerCase()} found`}
-                hint="Create the first one."
-              />
-            ) : (
-              <DataTable
-                columns={config.columns}
-                rows={filtered}
-                onEdit={openEdit}
-                onDelete={remove}
-              />
-            )}
-          </div>
+
+          {pageRows.length === 0 ? (
+            <EmptyState
+              title={`No ${config.label.toLowerCase()} found`}
+              hint={search.trim() ? "Try a different search term." : "Create the first one with the button above."}
+            />
+          ) : (
+            <DataTable
+              columns={config.columns}
+              rows={pageRows}
+              onEdit={openEdit}
+              onDelete={remove}
+              sortKey={sortKey}
+              sortAsc={sortAsc}
+              onSort={toggleSort}
+            />
+          )}
+
+          {/* pagination controls */}
+          {pageCount > 1 && (
+            <div className="flex items-center justify-between mt-5">
+              <button
+                onClick={() => setPage(Math.max(0, safePage - 1))}
+                disabled={safePage === 0}
+                className="btn-outline !px-4 !py-2 text-sm disabled:opacity-40"
+              >
+                ← Prev
+              </button>
+              <span className="text-xs text-slate-400">
+                showing {safePage * PAGE_SIZE + 1}–{Math.min((safePage + 1) * PAGE_SIZE, sorted.length)} of {sorted.length}
+              </span>
+              <button
+                onClick={() => setPage(Math.min(pageCount - 1, safePage + 1))}
+                disabled={safePage >= pageCount - 1}
+                className="btn-outline !px-4 !py-2 text-sm disabled:opacity-40"
+              >
+                Next →
+              </button>
+            </div>
+          )}
         </div>
 
         {editing && (
-          <div className="animate-fade-in animate-slide-up" style={{ animationDelay: "0.3s" }}>
-            <div className="glass-card p-6 mt-6">
+          <div className="animate-fade-in animate-slide-up" style={{ animationDelay: "0.25s" }}>
+            <div className="glass-panel-light p-6 mt-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-semibold text-slate-800">
                   {isNew ? "Create" : "Edit"} {config.label}
@@ -191,11 +257,7 @@ export default function EntityListPage({ config }: { config: EntityConfig }) {
                   </div>
                 )}
                 <div className="flex justify-end gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setEditing(null)}
-                    className="btn-outline"
-                  >
+                  <button type="button" onClick={() => setEditing(null)} className="btn-outline">
                     Cancel
                   </button>
                   <button

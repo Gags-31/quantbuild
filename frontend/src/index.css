@@ -2,8 +2,43 @@
 @tailwind components;
 @tailwind utilities;
 
+/* --------------------------------------------------------------------------
+   QuantBuild premium design system
+   Dark, glassmorphic, animated — the "show the guide" look.
+   -------------------------------------------------------------------------- */
+
+:root {
+  color-scheme: dark;
+}
+
 body {
-  @apply bg-surface-950 text-slate-200 antialiased;
+  @apply text-slate-200 antialiased;
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(99, 102, 241, 0.18), transparent 60%),
+    radial-gradient(1000px 500px at 110% 10%, rgba(168, 85, 247, 0.12), transparent 55%),
+    radial-gradient(900px 700px at 50% 120%, rgba(16, 185, 129, 0.08), transparent 60%),
+    #07080f;
+  min-height: 100vh;
+}
+
+/* animated aurora sweep */
+body::before {
+  content: "";
+  position: fixed;
+  inset: -50%;
+  z-index: -1;
+  background:
+    conic-gradient(from 180deg at 50% 50%,
+      rgba(99, 102, 241, 0.05),
+      rgba(168, 85, 247, 0.05),
+      rgba(14, 165, 233, 0.05),
+      rgba(99, 102, 241, 0.05));
+  animation: aurora-sweep 26s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes aurora-sweep {
+  to { transform: rotate(360deg); }
 }
 
 ::-webkit-scrollbar {
@@ -21,17 +56,94 @@ body {
 }
 
 pre.code {
-  @apply bg-surface-950 border border-surface-800 rounded-lg p-4 text-xs font-mono overflow-x-auto leading-relaxed text-slate-300;
+  @apply border border-surface-800 rounded-lg p-4 text-xs font-mono overflow-x-auto leading-relaxed text-slate-300;
+  background: rgba(10, 12, 20, 0.75);
 }
+
+pre.code::-webkit-scrollbar { height: 6px; }
 
 .mermaid {
-  @apply flex justify-center bg-white rounded-lg p-4 overflow-x-auto;
+  @apply flex justify-center rounded-lg p-4 overflow-x-auto;
+  background: rgba(255, 255, 255, 0.96);
 }
 
+/* ------------------------------------------------------------------ panels */
+.glass-panel {
+  @apply rounded-xl border;
+  background: rgba(17, 19, 31, 0.62);
+  border-color: rgba(148, 163, 184, 0.12);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.glass-panel-hover {
+  transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+.glass-panel-hover:hover {
+  border-color: rgba(99, 102, 241, 0.45);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 40px rgba(79, 70, 229, 0.18);
+}
+
+/* -------------------------------------------------------------------- type */
+.gradient-text {
+  @apply font-bold;
+  background: linear-gradient(90deg, #818cf8, #c084fc, #22d3ee);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: gradient-shift 6s ease infinite;
+}
+
+@keyframes gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* ----------------------------------------------------------------- buttons */
+.btn-glow {
+  @apply text-white text-sm font-medium rounded-lg px-4 py-2.5 transition-all duration-200;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  box-shadow: 0 0 0 rgba(99, 102, 241, 0);
+}
+.btn-glow:hover {
+  background: linear-gradient(135deg, #4338ca, #6d28d9);
+  box-shadow: 0 0 22px rgba(99, 102, 241, 0.45);
+  transform: translateY(-1px);
+}
+.btn-glow:active { transform: translateY(0); }
+
+/* ------------------------------------------------------------------ inputs */
+input, textarea, select {
+  @apply rounded-lg border border-surface-800 bg-surface-850 text-slate-200
+         placeholder:text-slate-600 outline-none transition
+         focus:border-brand-500 focus:ring-2 focus:ring-brand-500/30;
+}
+
+/* --------------------------------------------------------------- animation */
 @keyframes pulse-dot {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.3; }
 }
 .dot-pulse {
   animation: pulse-dot 1.2s ease-in-out infinite;
+}
+
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.rise-in {
+  animation: rise-in 0.5s ease-out both;
+}
+
+@keyframes shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.shimmer {
+  background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 37%, rgba(255,255,255,0.03) 63%);
+  background-size: 800px 100%;
+  animation: shimmer 1.6s linear infinite;
 }
